@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Vistazo — AI Visibility Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --ink:#0b1220; --ink2:#111c2e; --panel:#ffffff; --bg:#eef2f7; --txt:#0f1b2d; --muted:#647088;
+  --line:#e4e9f0; --brand:#0ea5a4; --brand2:#22c55e; --accent:#0891b2; --gold:#d9a521;
+  --good:#16a34a; --warn:#d98e04; --bad:#e1483f; --shadow:0 1px 3px rgba(16,30,54,.06),0 8px 24px rgba(16,30,54,.06);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Inter",-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--txt);-webkit-font-smoothing:antialiased}
+a{color:var(--brand)}
+/* header */
+header{background:linear-gradient(110deg,#0b1220 0%,#10243a 60%,#0c3b3a 100%);color:#fff;padding:13px 24px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:30;box-shadow:0 2px 18px rgba(8,15,30,.25)}
+.brandbox{display:flex;align-items:center;gap:11px}
+.mark{width:34px;height:34px;flex-shrink:0}
+.mark .vf{fill:none;stroke:rgba(34,197,94,.6);stroke-width:1.6;stroke-linecap:round}
+.mark .eye{fill:none;stroke:#d6efe0;stroke-width:1.6}
+.mark .iris{fill:#22c55e}
+.mark .pupil{fill:#06201f}
+.mark .scan{stroke:#22c55e;stroke-width:1.4;opacity:.75;animation:scan 2.4s ease-in-out infinite}
+@keyframes scan{0%,100%{transform:translateY(-6px)}50%{transform:translateY(6px)}}
+.logo{font-size:21px;font-weight:800;letter-spacing:.3px}
+.logo small{display:block;font-size:11px;font-weight:500;opacity:.7;letter-spacing:.2px;margin-top:-2px}
+header .spacer{flex:1}
+.btn{border:0;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;background:var(--brand);color:#06201f;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.btn.ghost{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.28);color:#fff;box-shadow:none}
+.btn.sec{background:#eef2f7;color:var(--ink)}
+.btn.brand2{background:linear-gradient(135deg,#22c55e,#0ea5a4);color:#04231f}
+.btn.sm{padding:7px 12px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.langtog{display:flex;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);border-radius:9px;overflow:hidden}
+.langtog button{background:transparent;border:0;color:#fff;padding:6px 12px;cursor:pointer;font-weight:700;font-size:13px}
+.langtog button.on{background:#22c55e;color:#06201f}
+/* layout */
+.wrap{display:flex;min-height:calc(100vh - 60px)}
+.side{width:262px;background:var(--ink);color:#cfd8e6;padding:18px 14px;flex-shrink:0}
+.side h3{font-size:10.5px;text-transform:uppercase;letter-spacing:1.3px;color:#6b7a93;margin:6px 8px 10px}
+.proj{padding:12px 13px;border-radius:11px;cursor:pointer;margin-bottom:6px;border:1px solid transparent;transition:.12s}
+.proj:hover{background:rgba(255,255,255,.05)}
+.proj.on{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.4)}
+.proj .nm{font-weight:700;font-size:14px;color:#fff}
+.proj .ct{font-size:12px;color:#8b99b3;margin-top:1px}
+.proj .vbadge{float:right;font-size:11px;font-weight:700;color:#22c55e}
+.sidefoot{margin-top:16px;padding:12px;border-top:1px solid rgba(255,255,255,.08);font-size:11.5px;color:#6b7a93;line-height:1.5}
+.main{flex:1;padding:26px 32px;max-width:1180px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin:20px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:17px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--brand),var(--brand2))}
+.kpi .lab{font-size:12px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px}
+.kpi .val{font-size:32px;font-weight:800;margin-top:6px;letter-spacing:-.5px}
+.kpi .sub{font-size:12px;margin-top:3px;font-weight:600}
+.up{color:var(--good)} .down{color:var(--bad)} .flat{color:var(--muted)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:20px;margin-bottom:18px;box-shadow:var(--shadow)}
+.panel h2{margin:0 0 3px;font-size:16px;display:flex;align-items:center;gap:8px}
+.panel .desc{color:var(--muted);font-size:13px;margin-bottom:15px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:10px 11px;border-bottom:1px solid var(--line)}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+.pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.pill.g{background:#dcfce7;color:#15803d} .pill.y{background:#fef3c7;color:#a16207} .pill.r{background:#fee2e2;color:#b91c1c}
+.tag{display:inline-block;background:#eef2f7;border:1px solid var(--line);border-radius:8px;padding:4px 10px;margin:3px 5px 3px 0;font-size:12.5px}
+.modal-bg{position:fixed;inset:0;background:rgba(8,15,30,.55);backdrop-filter:blur(2px);display:none;align-items:flex-start;justify-content:center;z-index:50;overflow:auto;padding:42px 16px}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:17px;padding:28px;width:660px;max-width:100%;box-shadow:0 24px 60px rgba(8,15,30,.35)}
+.modal h2{margin:0 0 16px}
+label{display:block;font-size:13px;font-weight:600;margin:13px 0 5px}
+input[type=text],input[type=url],input[type=password],textarea,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit;background:#fbfcfe}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(14,165,164,.13)}
+textarea{min-height:92px;resize:vertical}
+.row{display:flex;gap:13px}.row>*{flex:1}
+.muted{color:var(--muted)} .small{font-size:12px} .right{text-align:right} .center{text-align:center}
+.empty{text-align:center;color:var(--muted);padding:70px 20px}
+.note{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:12px 14px;font-size:13px;margin:13px 0;color:#065f46}
+.scanlog{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#06121d;color:#5eead4;border-radius:10px;padding:13px;max-height:170px;overflow:auto;white-space:pre-wrap}
+details{border:1px solid var(--line);border-radius:10px;margin:7px 0;padding:3px 13px;background:#fbfcfe}
+details summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:8px 0}
+.spacer{flex:1}
+@media print{
+  header,.side,.noprint{display:none!important}
+  .main{max-width:100%;padding:0}
+  body{background:#fff}
+  .panel{break-inside:avoid;border-color:#ccc;box-shadow:none}
+  .report-head{display:block!important}
+  .kpi{box-shadow:none}
+}
+.report-head{display:none}
+.report-head .rh-logo{font-size:24px;font-weight:800;color:#0b1220}
+.report-head .rh-logo span{color:#0ea5a4}
+</style>
+</head>
+<body>
+<header>
+  <div class="brandbox">
+    <svg class="mark" viewBox="0 0 40 40">
+      <path class="vf" d="M6 13 V8 a2 2 0 0 1 2 -2 H13"/>
+      <path class="vf" d="M34 13 V8 a2 2 0 0 0 -2 -2 H27"/>
+      <path class="vf" d="M6 27 V32 a2 2 0 0 0 2 2 H13"/>
+      <path class="vf" d="M34 27 V32 a2 2 0 0 1 -2 2 H27"/>
+      <path class="eye" d="M10 20 Q20 11 30 20 Q20 29 10 20 Z"/>
+      <circle class="iris" cx="20" cy="20" r="4.4"/>
+      <circle class="pupil" cx="20" cy="20" r="1.9"/>
+      <line class="scan" x1="11" y1="20" x2="29" y2="20"/>
+    </svg>
+    <div class="logo">Vistazo<small data-i="tagline">¿Te ve la IA?</small></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="langtog">
+    <button id="lang-es" class="on" onclick="setLang('es')">ES</button>
+    <button id="lang-en" onclick="setLang('en')">EN</button>
+  </div>
+  <button class="btn ghost sm" onclick="openSettings()" data-i="settings">Ajustes</button>
+  <button class="btn brand2 sm" onclick="openProject()" data-i="newProject">+ Nueva marca</button>
+</header>
+
+<div class="wrap">
+  <aside class="side noprint">
+    <h3 data-i="brandsTracked">Marcas monitorizadas</h3>
+    <div id="projList"></div>
+    <div class="sidefoot" id="sidefoot"></div>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+
+<!-- Project modal -->
+<div class="modal-bg" id="projModal">
+ <div class="modal">
+  <h2 id="projModalTitle" data-i="newProject">Nueva marca</h2>
+  <div class="row">
+    <div><label data-i="fBrand">Nombre de la marca</label><input id="fBrand" type="text" placeholder="Bufete Martín & Asociados"></div>
+    <div><label data-i="fWebsite">Sitio web</label><input id="fWebsite" type="url" placeholder="https://..."></div>
+  </div>
+  <div class="row">
+    <div><label data-i="fCategory">Categoría / servicio</label><input id="fCategory" type="text" placeholder="abogado de familia"></div>
+    <div><label data-i="fCity">Ciudad / zona</label><input id="fCity" type="text" placeholder="Barcelona"></div>
+  </div>
+  <label data-i="fQueryLang">Idioma de las consultas</label>
+  <select id="fQueryLang"><option value="es">Español</option><option value="en">English</option></select>
+  <label data-i="fCompetitors">Competidores (uno por línea)</label>
+  <div class="noprint" style="margin-bottom:6px"><button class="btn sec sm" id="suggestBtn" onclick="genCompetitors()">✨ Sugerir competidores</button></div>
+  <textarea id="fCompetitors" placeholder="Vilanova Abogados&#10;Despacho Grau"></textarea>
+  <label data-i="fPrompts">Preguntas de cliente <span class="muted small" data-i="fPromptsHint">(autogeneradas — edítalas)</span></label>
+  <div class="noprint" style="margin-bottom:6px"><button class="btn sec sm" onclick="genPrompts()" data-i="regen">↻ Regenerar sugerencias</button></div>
+  <textarea id="fPrompts"></textarea>
+  <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn sec" onclick="closeModal('projModal')" data-i="cancel">Cancelar</button>
+    <button class="btn" onclick="saveProject()" data-i="save">Guardar</button>
+  </div>
+ </div>
+</div>
+
+<!-- Settings modal -->
+<div class="modal-bg" id="setModal">
+ <div class="modal">
+  <h2 data-i="settings">Ajustes</h2>
+  <label data-i="sAgency">Nombre de tu agencia (en informes)</label>
+  <input id="sAgency" type="text" placeholder="hiverevenue.co">
+  <div class="note" data-i="keysNote">Las claves API se guardan solo en este navegador. Sin claves, usa el Modo Demo. Para escaneos reales, añade al menos una clave.</div>
+  <label>OpenAI API key (ChatGPT)</label><input id="kOpenai" type="password" placeholder="sk-...">
+  <label>Anthropic API key (Claude)</label><input id="kAnthropic" type="password" placeholder="sk-ant-...">
+  <label>Google AI key (Gemini)</label><input id="kGemini" type="password" placeholder="AIza...">
+  <label>Perplexity API key</label><input id="kPplx" type="password" placeholder="pplx-...">
+  <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn sec" onclick="closeModal('setModal')" data-i="cancel">Cancelar</button>
+    <button class="btn" onclick="saveSettings()" data-i="save">Guardar</button>
+  </div>
+ </div>
+</div>
+
+<script>
+// ---------------- i18n ----------------
+const I = {
+ es:{tagline:"¿Te ve la IA?",settings:"Ajustes",newProject:"+ Nueva marca",brandsTracked:"Marcas monitorizadas",
+  fBrand:"Nombre de la marca",fWebsite:"Sitio web",fCategory:"Categoría / servicio",fCity:"Ciudad / zona",
+  fQueryLang:"Idioma de las consultas",fCompetitors:"Competidores (uno por línea)",fPrompts:"Preguntas de cliente",
+  fPromptsHint:"(autogeneradas — edítalas)",regen:"↻ Regenerar sugerencias",cancel:"Cancelar",save:"Guardar",
+  sAgency:"Nombre de tu agencia (en informes)",
+  keysNote:"Las claves API se guardan solo en este navegador. Sin claves, usa el Modo Demo. Para escaneos reales, añade al menos una clave.",
+  visibility:"Visibilidad",sov:"Cuota de voz",mentions:"Menciones",engines:"Motores IA",
+  visDesc:"% de preguntas donde aparece tu marca",sovDesc:"tus menciones vs. competidores",
+  trend:"Evolución de la visibilidad",trendDesc:"Tu puntuación a lo largo del tiempo",
+  compTitle:"Cuota de voz vs. competidores",compDesc:"A quién recomienda más la IA en tu categoría",
+  prompts:"Preguntas monitorizadas",scanNow:"▶ Ejecutar escaneo",scanning:"Escaneando…",
+  history:"Historial de escaneos",results:"Resultados por pregunta",report:"📄 Informe para cliente",
+  noProj:"Crea tu primera marca para empezar, o explora los proyectos demo.",
+  vsLast:"vs. anterior",date:"Fecha",engine:"Motor",found:"Aparece",pos:"Posición",competitor:"Competidor",
+  mode:"Modo",demo:"DEMO",live:"REAL",runDemo:"Datos demo (sin claves)",runLive:"Escaneo real con tus claves",
+  delete:"Eliminar",edit:"Editar",confirmDel:"¿Eliminar esta marca y su historial?",
+  generated:"Generado el",forBrand:"Informe de visibilidad en IA",
+  yes:"Sí",no:"No",scanComplete:"Escaneo completado",noKeys:"Sin claves API — ejecutando en Modo Demo.",
+  engineErr:"error (¿CORS/clave?) — omitido",
+  whatNext:"Qué significa y qué hacer ahora",noScans:"Aún no hay escaneos. Pulsa «Ejecutar escaneo».",
+  recoTitle:"Recomendaciones prioritarias",totalProj:"marcas · escaneos automáticos vía backend (opcional)"},
+ en:{tagline:"Does AI see you?",settings:"Settings",newProject:"+ New brand",brandsTracked:"Brands tracked",
+  fBrand:"Brand name",fWebsite:"Website",fCategory:"Category / service",fCity:"City / area",
+  fQueryLang:"Query language",fCompetitors:"Competitors (one per line)",fPrompts:"Customer questions",
+  fPromptsHint:"(auto-generated — edit them)",regen:"↻ Regenerate suggestions",cancel:"Cancel",save:"Save",
+  sAgency:"Your agency name (on reports)",
+  keysNote:"API keys are stored only in this browser. Without keys, use Demo Mode. For real scans, add at least one key.",
+  visibility:"Visibility",sov:"Share of voice",mentions:"Mentions",engines:"AI engines",
+  visDesc:"% of questions where your brand appears",sovDesc:"your mentions vs. competitors",
+  trend:"Visibility over time",trendDesc:"Your score across scans",
+  compTitle:"Share of voice vs. competitors",compDesc:"Who AI recommends most in your category",
+  prompts:"Tracked questions",scanNow:"▶ Run scan",scanning:"Scanning…",
+  history:"Scan history",results:"Results by question",report:"📄 Client report",
+  noProj:"Create your first brand to start, or explore the demo projects.",
+  vsLast:"vs. previous",date:"Date",engine:"Engine",found:"Appears",pos:"Position",competitor:"Competitor",
+  mode:"Mode",demo:"DEMO",live:"LIVE",runDemo:"Demo data (no keys)",runLive:"Real scan with your keys",
+  delete:"Delete",edit:"Edit",confirmDel:"Delete this brand and its history?",
+  generated:"Generated on",forBrand:"AI Visibility Report",
+  yes:"Yes",no:"No",scanComplete:"Scan complete",noKeys:"No API keys — running in Demo Mode.",
+  engineErr:"error (CORS/key?) — skipped",
+  whatNext:"What it means and what to do now",noScans:"No scans yet. Hit “Run scan”.",
+  recoTitle:"Priority recommendations",totalProj:"brands · automated scans via backend (optional)"}
+};
+let lang = localStorage.getItem('vistazo_lang') || 'es';
+function t(k){return (I[lang][k]!==undefined?I[lang][k]:(I.es[k]||k));}
+
+// ---------------- state ----------------
+let store = JSON.parse(localStorage.getItem('vistazo_store')||'null') || {projects:[],settings:{},sel:null};
+function save(){localStorage.setItem('vistazo_store',JSON.stringify(store));}
+function uid(){return Math.random().toString(36).slice(2,9);}
+
+// ---------------- prompt generation ----------------
+const PT = {
+ es:["¿Cuál es el/la mejor {cat} en {city}?","Mejores {cat} en {city}","{cat} recomendado/a en {city}",
+  "¿Qué {cat} me recomiendas en {city}?","{cat} con mejores opiniones en {city}","{cat} de confianza en {city}",
+  "¿A qué {cat} acudir en {city}?","Top {cat} en {city} 2026","{cat} más valorado/a de {city}","Necesito un buen/a {cat} en {city}"],
+ en:["What is the best {cat} in {city}?","Best {cat} in {city}","Recommended {cat} in {city}",
+  "Which {cat} do you recommend in {city}?","Top-rated {cat} in {city}","Trusted {cat} in {city}",
+  "Who should I go to for {cat} in {city}?","Top {cat} in {city} 2026","Most reviewed {cat} in {city}","I need a good {cat} in {city}"]
+};
+function makePrompts(cat,city,ql){return (PT[ql]||PT.es).map(s=>s.replace('{cat}',cat||'servicio').replace('{city}',city||'tu ciudad'));}
+
+// ---------------- demo seed (legal-led + clinic) ----------------
+function seedDemo(){
+ if(store.projects.length) return;
+ const mk=(brand,website,cat,city,comps,visSeq)=>{
+   const prompts=makePrompts(cat,city,"es");
+   const p={id:uid(),brand,website,category:cat,city,ql:"es",competitors:comps,prompts,scans:[]};
+   ["2026-03-15","2026-04-15","2026-05-15","2026-05-29"].forEach((d,di)=>{
+     const scan={date:d,mode:'demo',engines:["ChatGPT","Gemini","Claude","Perplexity"],rows:[]};
+     prompts.forEach((q,qi)=>scan.engines.forEach(eng=>{
+       const found=Math.random()*100 < (visSeq[di]+(qi<4?12:-6));
+       const cM={};comps.forEach(c=>cM[c]=Math.random()<0.5);
+       scan.rows.push({q,engine:eng,found,pos:found?1+Math.floor(Math.random()*3):null,comps:cM});
+     }));
+     p.scans.push(scan);
+   });
+   return p;
+ };
+ const legal=mk("Bufete Martín & Asociados","https://bufetemartin.example","abogado de familia","Barcelona",
+   ["Vilanova Abogados","Despacho Grau","Legal BCN"],[18,34,49,58]);
+ const clinic=mk("Clínica Dental Sonrisa","https://clinicasonrisa.example","clínica dental","Madrid",
+   ["Clínica Dental Vallés","Dental Sant Pau","Smile Madrid"],[22,38,55,64]);
+ store.projects.push(legal,clinic);store.sel=legal.id;save();
+}
+
+// ---------------- metrics ----------------
+function scanMetrics(scan,comps){
+ let total=scan.rows.length, found=scan.rows.filter(r=>r.found).length;
+ let brandM=found, compM=0;
+ scan.rows.forEach(r=>comps.forEach(c=>{if(r.comps&&r.comps[c])compM++;}));
+ const vis=total?Math.round(found/total*100):0;
+ const sov=(brandM+compM)?Math.round(brandM/(brandM+compM)*100):0;
+ return {vis,sov,mentions:brandM,total,compM};
+}
+function compShare(scan,comps){
+ const counts={};comps.forEach(c=>counts[c]=0);
+ scan.rows.forEach(r=>comps.forEach(c=>{if(r.comps&&r.comps[c])counts[c]++;}));
+ return {brand:scan.rows.filter(r=>r.found).length,counts};
+}
+
+// ---------------- rendering ----------------
+let charts={};
+function renderSidebar(){
+ const el=document.getElementById('projList');
+ if(!store.projects.length){el.innerHTML='<div class="muted small" style="padding:8px">—</div>';}
+ else el.innerHTML=store.projects.map(p=>{
+   const last=p.scans[p.scans.length-1];const v=last?scanMetrics(last,p.competitors).vis:0;
+   return `<div class="proj ${p.id===store.sel?'on':''}" onclick="selectProj('${p.id}')">
+   <span class="vbadge">${v}%</span><div class="nm">${esc(p.brand)}</div><div class="ct">${esc(p.category)} · ${esc(p.city)}</div></div>`;}).join('');
+ document.getElementById('sidefoot').textContent=`${store.projects.length} ${t('totalProj')}`;
+}
+function selectProj(id){store.sel=id;save();render();}
+function curProj(){return store.projects.find(p=>p.id===store.sel)||store.projects[0];}
+
+function render(){
+ document.documentElement.lang=lang;
+ document.querySelectorAll('[data-i]').forEach(e=>{const k=e.getAttribute('data-i');if(I[lang][k]!==undefined)e.textContent=I[lang][k];});
+ document.getElementById('lang-es').className=lang==='es'?'on':'';
+ document.getElementById('lang-en').className=lang==='en'?'on':'';
+ renderSidebar();
+ const m=document.getElementById('main');const p=curProj();
+ if(!p){m.innerHTML=`<div class="empty"><h2>Vistazo</h2><p>${t('noProj')}</p></div>`;return;}
+ const last=p.scans[p.scans.length-1], prev=p.scans[p.scans.length-2];
+ const cur=last?scanMetrics(last,p.competitors):{vis:0,sov:0,mentions:0,total:0};
+ const pm=prev?scanMetrics(prev,p.competitors):null;
+ const delta=(a,b)=>{if(b==null)return '<span class="flat">—</span>';const d=a-b;const c=d>0?'up':d<0?'down':'flat';const s=d>0?'▲':d<0?'▼':'■';return `<span class="${c}">${s} ${Math.abs(d)} ${t('vsLast')}</span>`;};
+ const engN=last?last.engines.length:0;
+ m.innerHTML=`
+ <div class="report-head">
+   <div class="rh-logo">Vistazo<span>.</span> · ${esc(store.settings.agency||'hiverevenue.co')}</div>
+   <div style="margin-top:4px">${t('forBrand')}: <b>${esc(p.brand)}</b> — ${esc(p.category)}, ${esc(p.city)}</div>
+   <div class="muted small">${t('generated')} ${new Date().toLocaleDateString(lang==='es'?'es-ES':'en-GB')}</div><hr>
+ </div>
+ <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+   <h1 style="margin:0;font-size:25px;letter-spacing:-.3px">${esc(p.brand)}</h1>
+   <span class="muted">${esc(p.category)} · ${esc(p.city)}</span>
+   <span class="pill ${last&&last.mode==='live'?'g':'y'}">${last?(last.mode==='live'?t('live'):t('demo')):'—'}</span>
+   <div class="spacer"></div>
+   <div class="noprint" style="display:flex;gap:8px">
+     <button class="btn sec sm" onclick="openProject('${p.id}')">${t('edit')}</button>
+     <button class="btn sec sm" onclick="delProj('${p.id}')">${t('delete')}</button>
+     <button class="btn brand2 sm" onclick="window.print()">${t('report')}</button>
+   </div>
+ </div>
+ <div class="cards">
+   <div class="kpi"><div class="lab">◎ ${t('visibility')}</div><div class="val">${cur.vis}%</div><div class="sub">${delta(cur.vis,pm?pm.vis:null)}</div></div>
+   <div class="kpi"><div class="lab">◑ ${t('sov')}</div><div class="val">${cur.sov}%</div><div class="sub">${delta(cur.sov,pm?pm.sov:null)}</div></div>
+   <div class="kpi"><div class="lab">✦ ${t('mentions')}</div><div class="val">${cur.mentions}/${cur.total}</div><div class="sub muted small">${t('visDesc')}</div></div>
+   <div class="kpi"><div class="lab">⦿ ${t('engines')}</div><div class="val">${engN}</div><div class="sub muted small">ChatGPT·Gemini·Claude·Pplx</div></div>
+ </div>
+ <div class="panel noprint">
+   <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+     <button class="btn" id="scanBtn" onclick="runScan('${p.id}')">${t('scanNow')}</button>
+     <span class="muted small">${hasKeys()? '🔑 '+t('runLive'):'🧪 '+t('runDemo')}</span>
+   </div>
+   <div class="scanlog" id="scanlog" style="display:none;margin-top:12px"></div>
+ </div>
+ <div class="grid2">
+   <div class="panel"><h2>${t('trend')}</h2><div class="desc">${t('trendDesc')}</div><canvas id="trendChart" height="172"></canvas></div>
+   <div class="panel"><h2>${t('compTitle')}</h2><div class="desc">${t('compDesc')}</div><canvas id="compChart" height="172"></canvas></div>
+ </div>
+ <div class="panel"><h2>${t('recoTitle')}</h2><div class="desc">${t('whatNext')}</div>${recoHTML(p,cur)}</div>
+ <div class="panel"><h2>${t('history')}</h2>${historyHTML(p)}</div>
+ <div class="panel noprint"><h2>${t('prompts')}</h2>${promptsHTML(p)}</div>
+ <div class="panel noprint"><h2>${t('results')}</h2>${resultsHTML(p)}</div>`;
+ drawCharts(p);
+}
+
+function recoHTML(p,cur){
+ const recos=[];
+ if(cur.vis<40)recos.push(lang==='es'?"Visibilidad baja: publica páginas con formato pregunta-respuesta para cada servicio y unifica nombre, dirección y categoría en Google, tu web y directorios.":"Low visibility: publish Q&A-formatted pages per service and unify name, address and category across Google, your site and directories.");
+ if(cur.sov<50)recos.push(lang==='es'?"Tus competidores se mencionan más: consigue reseñas y menciones en las fuentes de terceros que la IA cita (prensa local, directorios del sector, foros).":"Competitors out-mention you: earn reviews and citations on the third-party sources AI cites (local press, industry directories, forums).");
+ recos.push(lang==='es'?"Añade datos estructurados (schema.org LocalBusiness/FAQ) para que los motores extraigan tu información con fiabilidad.":"Add structured data (schema.org LocalBusiness/FAQ) so engines extract your info reliably.");
+ recos.push(lang==='es'?"Repite el escaneo cada mes para medir el progreso — es la base del informe recurrente.":"Re-scan monthly to track progress — the basis of the recurring report.");
+ return '<ol style="margin:0;padding-left:20px;line-height:1.75">'+recos.map(r=>`<li>${r}</li>`).join('')+'</ol>';
+}
+function historyHTML(p){
+ if(!p.scans.length)return `<div class="muted">${t('noScans')}</div>`;
+ let rows=p.scans.slice().reverse().map(s=>{const m=scanMetrics(s,p.competitors);
+   return `<tr><td>${s.date}</td><td><span class="pill ${s.mode==='live'?'g':'y'}">${s.mode==='live'?t('live'):t('demo')}</span></td>
+   <td><b>${m.vis}%</b></td><td>${m.sov}%</td><td>${m.mentions}/${m.total}</td><td>${s.engines.length}</td></tr>`;}).join('');
+ return `<table><tr><th>${t('date')}</th><th>${t('mode')}</th><th>${t('visibility')}</th><th>${t('sov')}</th><th>${t('mentions')}</th><th>${t('engines')}</th></tr>${rows}</table>`;
+}
+function promptsHTML(p){
+ return p.prompts.map(q=>`<span class="tag">${esc(q)}</span>`).join('')+
+   `<div class="muted small" style="margin-top:9px"><b>${p.competitors.length}</b> ${t('competitor').toLowerCase()}s: ${p.competitors.map(esc).join(', ')}</div>`;
+}
+function resultsHTML(p){
+ const last=p.scans[p.scans.length-1];if(!last)return `<div class="muted">${t('noScans')}</div>`;
+ const byQ={};last.rows.forEach(r=>{(byQ[r.q]=byQ[r.q]||[]).push(r);});
+ return Object.keys(byQ).map(q=>{const rs=byQ[q];const fc=rs.filter(r=>r.found).length;
+   const cls=fc>=rs.length*0.6?'g':fc>0?'y':'r';
+   return `<details><summary>${esc(q)} &nbsp;<span class="pill ${cls}">${fc}/${rs.length}</span></summary>
+   <table style="margin:6px 0"><tr><th>${t('engine')}</th><th>${t('found')}</th><th>${t('pos')}</th></tr>
+   ${rs.map(r=>`<tr><td>${r.engine}</td><td>${r.found?'<span class="pill g">'+t('yes')+'</span>':'<span class="pill r">'+t('no')+'</span>'}</td><td>${r.pos||'—'}</td></tr>`).join('')}</table></details>`;
+ }).join('');
+}
+function drawCharts(p){
+ Object.values(charts).forEach(c=>c&&c.destroy());charts={};
+ if(!p.scans.length)return;
+ const tc=document.getElementById('trendChart');
+ if(tc)charts.trend=new Chart(tc,{type:'line',data:{labels:p.scans.map(s=>s.date),
+   datasets:[{label:t('visibility')+' %',data:p.scans.map(s=>scanMetrics(s,p.competitors).vis),borderColor:'#0ea5a4',backgroundColor:'rgba(14,165,164,.14)',fill:true,tension:.35,pointRadius:4,pointBackgroundColor:'#0ea5a4'},
+   {label:t('sov')+' %',data:p.scans.map(s=>scanMetrics(s,p.competitors).sov),borderColor:'#d9a521',backgroundColor:'transparent',tension:.35,pointRadius:3,borderDash:[5,4]}]},
+   options:{scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%'},grid:{color:'#eef2f7'}},x:{grid:{display:false}}},plugins:{legend:{position:'bottom'}}}});
+ const cc=document.getElementById('compChart');
+ if(cc){const last=p.scans[p.scans.length-1];const cs=compShare(last,p.competitors);
+   const labels=[p.brand,...p.competitors];const data=[cs.brand,...p.competitors.map(c=>cs.counts[c])];
+   charts.comp=new Chart(cc,{type:'bar',data:{labels,datasets:[{label:t('mentions'),data,backgroundColor:labels.map((l,i)=>i===0?'#0ea5a4':'#c3ccd9'),borderRadius:6}]},
+   options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#eef2f7'}},y:{grid:{display:false}}}}});}
+}
+
+// ---------------- scanning ----------------
+function hasKeys(){const k=store.settings;return !!(k.kOpenai||k.kAnthropic||k.kGemini||k.kPplx);}
+function log(s){const el=document.getElementById('scanlog');el.style.display='block';el.textContent+=s+"\n";el.scrollTop=el.scrollHeight;}
+async function runScan(id){
+ const p=store.projects.find(x=>x.id===id);if(!p)return;
+ const btn=document.getElementById('scanBtn');btn.disabled=true;btn.textContent=t('scanning');
+ document.getElementById('scanlog').textContent='';
+ const live=hasKeys();if(!live)log(t('noKeys'));
+ const engines=[];const k=store.settings;
+ if(live){if(k.kOpenai)engines.push('ChatGPT');if(k.kGemini)engines.push('Gemini');if(k.kAnthropic)engines.push('Claude');if(k.kPplx)engines.push('Perplexity');}
+ else engines.push('ChatGPT','Gemini','Claude','Perplexity');
+ const scan={date:new Date().toISOString().slice(0,10),mode:live?'live':'demo',engines,rows:[]};
+ for(const q of p.prompts){for(const eng of engines){
+   let text=null;
+   if(live){log(`→ ${eng}: ${q}`);try{text=await queryEngine(eng,q,k);}catch(e){log(`   ${eng} ${t('engineErr')}`);text=null;}}
+   if(text===null && !live){const found=Math.random()<0.62;const cM={};p.competitors.forEach(c=>cM[c]=Math.random()<0.5);
+     scan.rows.push({q,engine:eng,found,pos:found?1+Math.floor(Math.random()*3):null,comps:cM});continue;}
+   if(text===null){scan.rows.push({q,engine:eng,found:false,pos:null,comps:{}});continue;}
+   const an=analyze(text,p.brand,p.competitors);scan.rows.push({q,engine:eng,found:an.found,pos:an.pos,comps:an.comps,answer:text});
+ }}
+ p.scans.push(scan);save();log(t('scanComplete')+' ✓');
+ btn.disabled=false;btn.textContent=t('scanNow');render();
+}
+function analyze(text,brand,comps){
+ const norm=s=>s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+ const T=norm(text);const order=[];
+ const bi=T.indexOf(norm(brand));const found=bi>=0;if(found)order.push([bi,'brand']);
+ const cmap={};comps.forEach(c=>{const ci=T.indexOf(norm(c));cmap[c]=ci>=0;if(ci>=0)order.push([ci,c]);});
+ order.sort((a,b)=>a[0]-b[0]);
+ let pos=null;if(found)pos=order.findIndex(o=>o[1]==='brand')+1;
+ return {found,pos,comps:cmap};
+}
+async function queryEngine(eng,prompt,k){
+ const sys="Answer concisely as a helpful local recommendation assistant. List specific business names.";
+ if(eng==='ChatGPT'){const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+k.kOpenai},body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'system',content:sys},{role:'user',content:prompt}]})});const j=await r.json();return j.choices[0].message.content;}
+ if(eng==='Gemini'){const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+k.kGemini,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:sys+"\n\n"+prompt}]}]})});const j=await r.json();return j.candidates[0].content.parts[0].text;}
+ if(eng==='Claude'){const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k.kAnthropic,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-3-5-haiku-20241022',max_tokens:500,system:sys,messages:[{role:'user',content:prompt}]})});const j=await r.json();return j.content[0].text;}
+ if(eng==='Perplexity'){const r=await fetch('https://api.perplexity.ai/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+k.kPplx},body:JSON.stringify({model:'sonar',messages:[{role:'system',content:sys},{role:'user',content:prompt}]})});const j=await r.json();return j.choices[0].message.content;}
+ return null;
+}
+
+// ---------------- modals ----------------
+let editId=null;
+function openProject(id){editId=id||null;const p=id?store.projects.find(x=>x.id===id):null;
+ document.getElementById('projModalTitle').textContent=p?(lang==='es'?'Editar marca':'Edit brand'):t('newProject');
+ fBrand.value=p?p.brand:'';fWebsite.value=p?p.website:'';fCategory.value=p?p.category:'';fCity.value=p?p.city:'';
+ fQueryLang.value=p?p.ql:lang;fCompetitors.value=p?p.competitors.join('\n'):'';fPrompts.value=p?p.prompts.join('\n'):'';
+ document.getElementById('suggestBtn').textContent=lang==='es'?'✨ Sugerir competidores':'✨ Suggest competitors';
+ document.getElementById('projModal').classList.add('show');}
+function genPrompts(){fPrompts.value=makePrompts(fCategory.value.trim(),fCity.value.trim(),fQueryLang.value).join('\n');}
+async function genCompetitors(){
+ const k=store.settings;
+ const eng=k.kGemini?'Gemini':k.kOpenai?'ChatGPT':k.kAnthropic?'Claude':k.kPplx?'Perplexity':null;
+ if(!eng){alert(lang==='es'?'Añade una clave API en Ajustes para sugerir competidores.':'Add an API key in Settings to suggest competitors.');return;}
+ const brand=fBrand.value.trim();if(!brand){fBrand.focus();return;}
+ const cat=fCategory.value.trim()||(lang==='es'?'negocio':'business');const city=fCity.value.trim();
+ const btn=document.getElementById('suggestBtn');const old=btn.textContent;btn.disabled=true;btn.textContent='…';
+ const prompt=lang==='es'
+  ? `Lista 4 competidores locales reales de "${brand}", un/a ${cat}${city?' en '+city:''}. Devuelve solo los nombres, uno por línea, sin números ni explicaciones.`
+  : `List 4 real local competitors of "${brand}", a ${cat}${city?' in '+city:''}. Return only the names, one per line, no numbers or explanations.`;
+ try{
+  const txt=await queryEngine(eng,prompt,k);
+  if(txt){
+   const names=txt.split('\n').map(s=>s.replace(/^[\s\d.\-*•]+/,'').trim()).filter(s=>s&&s.toLowerCase()!==brand.toLowerCase()).slice(0,6);
+   const ex=fCompetitors.value.trim();fCompetitors.value=(ex?ex+'\n':'')+names.join('\n');
+  }
+ }catch(e){alert((lang==='es'?'Error al sugerir: ':'Suggest error: ')+e);}
+ btn.disabled=false;btn.textContent=old;
+}
+function saveProject(){const b=fBrand.value.trim();if(!b){fBrand.focus();return;}
+ let prompts=fPrompts.value.split('\n').map(s=>s.trim()).filter(Boolean);
+ if(!prompts.length)prompts=makePrompts(fCategory.value.trim(),fCity.value.trim(),fQueryLang.value);
+ const comps=fCompetitors.value.split('\n').map(s=>s.trim()).filter(Boolean);
+ if(editId){const p=store.projects.find(x=>x.id===editId);Object.assign(p,{brand:b,website:fWebsite.value.trim(),category:fCategory.value.trim(),city:fCity.value.trim(),ql:fQueryLang.value,competitors:comps,prompts});}
+ else{const p={id:uid(),brand:b,website:fWebsite.value.trim(),category:fCategory.value.trim(),city:fCity.value.trim(),ql:fQueryLang.value,competitors:comps,prompts,scans:[]};store.projects.push(p);store.sel=p.id;}
+ save();closeModal('projModal');render();}
+function delProj(id){if(!confirm(t('confirmDel')))return;store.projects=store.projects.filter(p=>p.id!==id);if(store.sel===id)store.sel=store.projects[0]?store.projects[0].id:null;save();render();}
+function openSettings(){const s=store.settings;sAgency.value=s.agency||'';kOpenai.value=s.kOpenai||'';kAnthropic.value=s.kAnthropic||'';kGemini.value=s.kGemini||'';kPplx.value=s.kPplx||'';document.getElementById('setModal').classList.add('show');}
+function saveSettings(){store.settings={agency:sAgency.value.trim(),kOpenai:kOpenai.value.trim(),kAnthropic:kAnthropic.value.trim(),kGemini:kGemini.value.trim(),kPplx:kPplx.value.trim()};save();closeModal('setModal');render();}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+function setLang(l){lang=l;localStorage.setItem('vistazo_lang',l);render();}
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+seedDemo();render();
+</script>
+</body>
+</html>
