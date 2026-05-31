@@ -445,17 +445,18 @@ function genPrompts(){fPrompts.value=makePrompts(fCategory.value.trim(),fCity.va
 async function genCompetitors(){
  const k=store.settings;
  const brand=fBrand.value.trim();if(!brand){fBrand.focus();return;}
- const cat=fCategory.value.trim()||(lang==='es'?'negocio':'business');const city=fCity.value.trim();
+ const cat=fCategory.value.trim()||(lang==='es'?'negocio':'business');const city=fCity.value.trim();const web=fWebsite.value.trim();
  const order=['Claude'];if(k.kGemini)order.push('Gemini');if(k.kOpenai)order.push('ChatGPT');if(k.kPplx)order.push('Perplexity');
  const btn=document.getElementById('suggestBtn');const old=btn.textContent;btn.disabled=true;btn.textContent='…';
  const prompt=lang==='es'
-  ? `Lista 4 competidores locales reales de "${brand}", un/a ${cat}${city?' en '+city:''}. Devuelve solo los nombres, uno por línea, sin números ni explicaciones.`
-  : `List 4 real local competitors of "${brand}", a ${cat}${city?' in '+city:''}. Return only the names, one per line, no numbers or explanations.`;
+  ? `Eres un asistente que solo devuelve nombres de empresas. Da los 4 competidores más probables de "${brand}"${web?' ('+web+')':''}, ${cat}${city?' en '+city:''}. Responde solo con los nombres, uno por línea. Nada de números, viñetas, explicaciones ni advertencias. Si no estás seguro, da tu mejor estimación.`
+  : `You are an assistant that only returns company names. Give the 4 most likely competitors of "${brand}"${web?' ('+web+')':''}, ${cat}${city?' in '+city:''}. Reply with only the names, one per line. No numbers, bullets, explanations or disclaimers. If unsure, give your best guess.`;
  let txt=null,lastErr=null;
  for(const eng of order){try{txt=await queryEngine(eng,prompt,k);if(txt)break;}catch(e){lastErr=e;}}
  try{
   if(txt){
-   const names=txt.split('\n').map(s=>s.replace(/^[\s\d.\-*•]+/,'').trim()).filter(s=>s&&s.toLowerCase()!==brand.toLowerCase()).slice(0,6);
+   const bad=/recomiend|buscar|no (puedo|tengo)|google|linkedin|directorio|p[aá]ginas|registros|http|especif|acceso|verific|^para |^esto te|guess|sorry|i (can|don)/i;
+   const names=txt.split('\n').map(s=>s.replace(/^[\s\d.\-*•]+/,'').trim()).filter(s=>s&&s.length<=60&&!s.includes(':')&&!bad.test(s)&&s.toLowerCase()!==brand.toLowerCase()).slice(0,5);
    const ex=fCompetitors.value.trim();fCompetitors.value=(ex?ex+'\n':'')+names.join('\n');
   }else{alert((lang==='es'?'Error al sugerir: ':'Suggest error: ')+(lastErr||'sin respuesta'));}
  }catch(e){alert((lang==='es'?'Error al sugerir: ':'Suggest error: ')+e);}
