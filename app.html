@@ -228,6 +228,7 @@ function t(k){return (I[lang][k]!==undefined?I[lang][k]:(I.es[k]||k));}
 let store = JSON.parse(localStorage.getItem('vistazo_store')||'null') || {projects:[],settings:{},sel:null};
 function save(){localStorage.setItem('vistazo_store',JSON.stringify(store));}
 function uid(){return Math.random().toString(36).slice(2,9);}
+const SB_PROXY="https://firgcxnctlwpffameyxj.supabase.co/functions/v1/ai-proxy";const SB_TOKEN="vstz-9f3a7c2e8b1d4650";
 
 // ---------------- prompt generation ----------------
 const PT = {
@@ -400,7 +401,7 @@ async function runScan(id){
  document.getElementById('scanlog').textContent='';
  const live=hasKeys();if(!live)log(t('noKeys'));
  const engines=[];const k=store.settings;
- if(live){if(k.kOpenai)engines.push('ChatGPT');if(k.kGemini)engines.push('Gemini');if(k.kAnthropic)engines.push('Claude');if(k.kPplx)engines.push('Perplexity');}
+ if(live){if(k.kOpenai)engines.push('ChatGPT');if(k.kGemini)engines.push('Gemini');engines.push('Claude');if(k.kPplx)engines.push('Perplexity');}
  else engines.push('ChatGPT','Gemini','Claude','Perplexity');
  const scan={date:new Date().toISOString().slice(0,10),mode:live?'live':'demo',engines,rows:[]};
  for(const q of p.prompts){for(const eng of engines){
@@ -426,8 +427,8 @@ function analyze(text,brand,comps){
 async function queryEngine(eng,prompt,k){
  const sys="Answer concisely as a helpful local recommendation assistant. List specific business names.";
  if(eng==='ChatGPT'){const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+k.kOpenai},body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'system',content:sys},{role:'user',content:prompt}]})});const j=await r.json();return j.choices[0].message.content;}
- if(eng==='Gemini'){const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+(k.kGemini||''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:sys+"\n\n"+prompt}]}]})});const j=await r.json();if(j.error)throw new Error(j.error.message||'Gemini error');return (j.candidates&&j.candidates[0]&&j.candidates[0].content.parts[0].text)||null;}
- if(eng==='Claude'){const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k.kAnthropic,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-3-5-haiku-20241022',max_tokens:500,system:sys,messages:[{role:'user',content:prompt}]})});const j=await r.json();return j.content[0].text;}
+ if(eng==='Gemini'){const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+(k.kGemini||''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:sys+"\n\n"+prompt}]}]})});const j=await r.json();if(j.error)throw new Error(j.error.message||'Gemini error');return (j.candidates&&j.candidates[0]&&j.candidates[0].content.parts[0].text)||null;}
+ if(eng==='Claude'){const r=await fetch(SB_PROXY,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SB_TOKEN},body:JSON.stringify({engine:'Claude',prompt})});const j=await r.json();if(j.error)throw new Error(j.error);return j.text||null;}
  if(eng==='Perplexity'){const r=await fetch('https://api.perplexity.ai/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+k.kPplx},body:JSON.stringify({model:'sonar',messages:[{role:'system',content:sys},{role:'user',content:prompt}]})});const j=await r.json();return j.choices[0].message.content;}
  return null;
 }
@@ -443,20 +444,20 @@ function openProject(id){editId=id||null;const p=id?store.projects.find(x=>x.id=
 function genPrompts(){fPrompts.value=makePrompts(fCategory.value.trim(),fCity.value.trim(),fQueryLang.value).join('\n');}
 async function genCompetitors(){
  const k=store.settings;
- const eng=k.kGemini?'Gemini':k.kOpenai?'ChatGPT':k.kAnthropic?'Claude':k.kPplx?'Perplexity':null;
- if(!eng){alert(lang==='es'?'Añade una clave API en Ajustes para sugerir competidores.':'Add an API key in Settings to suggest competitors.');return;}
  const brand=fBrand.value.trim();if(!brand){fBrand.focus();return;}
  const cat=fCategory.value.trim()||(lang==='es'?'negocio':'business');const city=fCity.value.trim();
+ const order=['Claude'];if(k.kGemini)order.push('Gemini');if(k.kOpenai)order.push('ChatGPT');if(k.kPplx)order.push('Perplexity');
  const btn=document.getElementById('suggestBtn');const old=btn.textContent;btn.disabled=true;btn.textContent='…';
  const prompt=lang==='es'
   ? `Lista 4 competidores locales reales de "${brand}", un/a ${cat}${city?' en '+city:''}. Devuelve solo los nombres, uno por línea, sin números ni explicaciones.`
   : `List 4 real local competitors of "${brand}", a ${cat}${city?' in '+city:''}. Return only the names, one per line, no numbers or explanations.`;
+ let txt=null,lastErr=null;
+ for(const eng of order){try{txt=await queryEngine(eng,prompt,k);if(txt)break;}catch(e){lastErr=e;}}
  try{
-  const txt=await queryEngine(eng,prompt,k);
   if(txt){
    const names=txt.split('\n').map(s=>s.replace(/^[\s\d.\-*•]+/,'').trim()).filter(s=>s&&s.toLowerCase()!==brand.toLowerCase()).slice(0,6);
    const ex=fCompetitors.value.trim();fCompetitors.value=(ex?ex+'\n':'')+names.join('\n');
-  }
+  }else{alert((lang==='es'?'Error al sugerir: ':'Suggest error: ')+(lastErr||'sin respuesta'));}
  }catch(e){alert((lang==='es'?'Error al sugerir: ':'Suggest error: ')+e);}
  btn.disabled=false;btn.textContent=old;
 }
