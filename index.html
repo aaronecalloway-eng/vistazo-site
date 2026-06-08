@@ -230,7 +230,7 @@ footer .mono{color:var(--muted)}
   <div class="logo" style="font-size:19px">Vistazo<span class="cur">_</span></div>
   <div class="mono" style="margin-top:8px">Vistazo by hiverevenue.co · <a href="mailto:hellovistazo@gmail.com" style="color:var(--green)">hellovistazo@gmail.com</a></div>
   <div class="optout" data-en="If you received an email from us and prefer not to hear from us, just reply STOP and we will remove you immediately." data-es="Si recibiste un email nuestro y prefieres no recibir más, responde BAJA y te eliminamos de inmediato.">If you received an email from us and prefer not to hear from us, just reply STOP and we will remove you immediately.</div>
-  <div class="mono" style="margin-top:10px;color:#475157">© 2026 Vistazo</div>
+  <div class="mono" style="margin-top:10px;color:#475157">© <span id="yr">2026</span> Vistazo · <span data-en="build" data-es="versión">build</span> <span id="build">2026.06.08</span></div>
 </footer>
 
 <script>
@@ -250,14 +250,22 @@ function setLang(l){
   document.getElementById('buy-growth').href=LINKS[l].growth;
 }
 setLang(localStorage.getItem('vz_lang')||'en');
+try{document.getElementById('yr').textContent=new Date().getFullYear();}catch(e){}
 
 // hero scan animation
 const T=document.getElementById('term');
+const SCEN=[
+ {q:'> best dental clinic in Miami', noun:'clinic'},
+ {q:'> mejor abogado de familia en Madrid', noun:'despacho'},
+ {q:'> best family law attorney in Austin', noun:'firm'},
+ {q:'> millor clínica estètica a Barcelona', noun:'clínica'}
+];
+const S=SCEN[Math.floor(Math.random()*SCEN.length)];
 const lines=[
- ['tprompt','> best dental clinic in Miami'],
+ ['tprompt',S.q],
  ['tdim','  scanning ChatGPT . Gemini . Claude . Perplexity ...'],
  ['tbad','  competitor named in 3 / 4 answers'],
- ['tbad','  your clinic: not found'],
+ ['tbad','  your '+S.noun+': not found'],
  ['tok','  applying fixes ...'],
  ['tok','  re-scan: you now appear in 3 / 4'],
  ['bar','']
